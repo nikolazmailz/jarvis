@@ -1,4 +1,4 @@
-package ru.jarvis.infra.config
+package ru.jarvis.config.telegram
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

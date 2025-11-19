@@ -1,17 +1,14 @@
 package ru.jarvis.infra.telegram.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonInclude
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class SendMessageRequest(
-    @JsonProperty("chat_id")
-    val chatId: Long,
+    val chat_id: Long,
     val text: String,
-    @JsonProperty("parse_mode")
-    val parseMode: String? = null,
-    @JsonProperty("disable_web_page_preview")
-    val disableWebPagePreview: Boolean? = null,
-    @JsonProperty("disable_notification")
-    val disableNotification: Boolean? = null
+    val parse_mode: String? = null,
+    val disable_web_page_preview: Boolean? = null,
+    val disable_notification: Boolean? = null
 )
 
 

@@ -42,6 +42,7 @@ management:
 
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN:}
+  webhook-secret: ${TG_WEBHOOK_SECRET:}
   webhook:
     base-path: /tg
     endpoint: /webhook

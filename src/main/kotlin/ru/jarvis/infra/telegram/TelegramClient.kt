@@ -36,7 +36,7 @@ class TelegramClient(
             ?: error("Telegram bot token is not configured")
 
         val request = SendMessageRequest(
-            chatId = chatId,
+            chat_id = chatId,
             text = text
         )
 
