@@ -1,2 +1,19 @@
+spring:
+  application:
+    name: jarvis
+
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: native
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    ru.jarvis: DEBUG
+
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN:}
+  webhook:
+    base-path: /tg
+    endpoint: /webhook
