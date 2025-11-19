@@ -2,6 +2,7 @@ package ru.jarvis.domain.telegram
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
+// todo перенести в controller ?
 /**
  * DTO, описывающий обновление Telegram, которое мы получаем через webhook.
  */
