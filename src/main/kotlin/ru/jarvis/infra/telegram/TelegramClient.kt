@@ -3,6 +3,7 @@ package ru.jarvis.infra.telegram
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -16,18 +17,13 @@ import ru.jarvis.infra.telegram.dto.TelegramClientException
  */
 @Component
 class TelegramClient(
-    private val webClientBuilder: WebClient.Builder,
+    @Qualifier("telegramWebClient")
+    private val webClient: WebClient,
     @Value("\${telegram.bot-token:}")
     private val botToken: String
 ) {
 
     private val log = KotlinLogging.logger {}
-
-    private val webClient: WebClient by lazy {
-        webClientBuilder
-            .baseUrl(API_URL)
-            .build()
-    }
 
     /**
      * Отправляет простое текстовое сообщение в чат.
@@ -61,8 +57,4 @@ class TelegramClient(
         return response.result
     }
 
-
-    private companion object {
-        private const val API_URL = "https://api.telegram.org"
-    }
 }
