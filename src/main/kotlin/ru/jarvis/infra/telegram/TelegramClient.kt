@@ -1,28 +1,29 @@
 package ru.jarvis.infra.telegram
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
+import org.springframework.web.reactive.function.client.awaitBody
+import ru.jarvis.domain.telegram.TelegramMessage
 import ru.jarvis.infra.telegram.dto.SendMessageRequest
 import ru.jarvis.infra.telegram.dto.TelegramApiResponse
+import ru.jarvis.infra.telegram.dto.TelegramClientException
 
 /**
  * HTTP-клиент для работы с Telegram Bot API.
  */
 @Component
 class TelegramClient(
-    private val webClientBuilder: WebClient.Builder,
+    @Qualifier("telegramWebClient")
+    private val webClient: WebClient,
     @Value("\${telegram.bot-token:}")
     private val botToken: String
 ) {
 
     private val log = KotlinLogging.logger {}
-
-    private val webClient = webClientBuilder
-        .baseUrl(API_URL)
-        .build()
 
     /**
      * Отправляет простое текстовое сообщение в чат.
@@ -30,7 +31,7 @@ class TelegramClient(
     suspend fun sendMessage(
         chatId: Long,
         text: String,
-    ) {
+    ): TelegramMessage {
         val token = botToken.takeIf { it.isNotBlank() }
             ?: error("Telegram bot token is not configured")
 
@@ -41,31 +42,19 @@ class TelegramClient(
 
         log.debug { "Sending Telegram message: $request" }
 
-        webClient.post()
-            .uri("$token/sendMessage")
+        val response = webClient.post()
+            .uri("/bot$token/sendMessage")
             .bodyValue(request)
-            .exchangeToMono { resp ->
-                if (resp.statusCode().is2xxSuccessful) {
-                    resp.bodyToMono(TelegramApiResponse::class.java)
-                        .flatMap { raw ->
-                            @Suppress("UNCHECKED_CAST")
-                            val tg = raw as TelegramApiResponse<*>
-                            if (tg.ok) Mono.just(Unit)
-                            else Mono.error(IllegalStateException("Telegram error: ${tg.description ?: "unknown"}"))
-                        }
-                } else {
-                    resp.bodyToMono(String::class.java)
-                        .defaultIfEmpty("<empty body>")
-                        .flatMap { body ->
-                            val code = resp.statusCode().value()
-                            log.warn { "Telegram HTTP $code: $body" }
-                            Mono.error(IllegalStateException("HTTP $code from Telegram: $body"))
-                        }
-                }
-            }
+            .retrieve()
+            .awaitBody<TelegramApiResponse<TelegramMessage>>()
+
+        if (!response.ok || response.result == null) {
+            throw TelegramClientException(
+                "Failed to send Telegram message: ${response.description ?: "unknown error"}"
+            )
+        }
+
+        return response.result
     }
 
-    private companion object {
-        private const val API_URL = "https://api.telegram.org/bot"
-    }
 }
