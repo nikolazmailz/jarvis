@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service
 import ru.jarvis.domain.audit.AuditDirection
 import ru.jarvis.domain.audit.AuditSource
 import ru.jarvis.domain.audit.AuditStatus
+import ru.jarvis.domain.audit.LogErrorStageEnum
 import ru.jarvis.domain.audit.MessageAudit
+import ru.jarvis.domain.queue.Message
 import ru.jarvis.domain.telegram.TelegramMessage
 import ru.jarvis.infra.repo.MessageAuditRepository
 import java.util.UUID
@@ -107,6 +109,27 @@ class AuditService(
         )
 
         persistAudit(audit, "error $stage")
+    }
+
+    suspend fun logErrorStage(
+        entry: Message,
+        exception: Throwable,
+        correlationId: UUID?,
+        stage: LogErrorStageEnum,
+        requestText: String? = null,
+        responseText: String? = null
+    ) {
+        logError(
+            chatId = entry.chatId,
+            messageId = null,
+            source = stage.source,
+            direction = stage.direction,
+            stage = stage.name,
+            exception = exception,
+            correlationId = correlationId,
+            requestText = requestText ?: entry.messageText,
+            responseText = responseText
+        )
     }
 
     private fun buildErrorMessage(stage: String, exception: Throwable): String {

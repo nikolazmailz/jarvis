@@ -3,8 +3,7 @@ package ru.jarvis.application
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import ru.jarvis.domain.queue.Message
-import ru.jarvis.domain.audit.AuditDirection
-import ru.jarvis.domain.audit.AuditSource
+import ru.jarvis.domain.audit.LogErrorStageEnum
 import ru.jarvis.domain.telegram.TelegramMessage
 import ru.jarvis.infra.openai.OpenAiClient
 import ru.jarvis.infra.repo.MessageQueueRepository
@@ -49,15 +48,11 @@ class DialogService(
         val aiResponse = try {
             openAiClient.requestChatCompletion(entry.messageText)
         } catch (ex: Exception) {
-            auditService.logError(
-                chatId = entry.chatId,
-                messageId = null,
-                source = AuditSource.OPENAI,
-                direction = AuditDirection.OUTBOUND,
-                stage = "OPENAI_REQUEST",
+            auditService.logErrorStage(
+                entry = entry,
                 exception = ex,
                 correlationId = correlationId,
-                requestText = entry.messageText
+                stage = LogErrorStageEnum.OPENAI_REQUEST
             )
             throw ex
         }
@@ -68,14 +63,11 @@ class DialogService(
         val telegramMessage = try {
             telegramClient.sendMessage(chatId = entry.chatId, text = aiResponse)
         } catch (ex: Exception) {
-            auditService.logError(
-                chatId = entry.chatId,
-                messageId = null,
-                source = AuditSource.TELEGRAM,
-                direction = AuditDirection.OUTBOUND,
-                stage = "TELEGRAM_SEND_MESSAGE",
+            auditService.logErrorStage(
+                entry = entry,
                 exception = ex,
                 correlationId = correlationId,
+                stage = LogErrorStageEnum.TELEGRAM_SEND_MESSAGE,
                 requestText = aiResponse
             )
             throw ex
