@@ -24,7 +24,7 @@ class TelegramWebhookController(
     suspend fun handleWebhook(@RequestBody request: TelegramWebhookRequest): ResponseEntity<Unit> {
         log.info { "Received Telegram update: $request" }
 
-        request.message?.let { dialogService.directAnswer(it) }
+        request.message?.let { dialogService.enqueueMessage(it) }
 
         return ResponseEntity.ok().build()
     }

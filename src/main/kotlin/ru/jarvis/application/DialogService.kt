@@ -1,46 +1,47 @@
 package ru.jarvis.application
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import ru.jarvis.domain.queue.MessageQueueEntry
+import ru.jarvis.domain.queue.MessageQueueRepository
 import ru.jarvis.domain.telegram.TelegramMessage
 import ru.jarvis.infra.openai.OpenAiClient
 import ru.jarvis.infra.telegram.TelegramClient
 
 /**
- * Принимает сообщения Telegram и отвечает на них простым echo-текстом.
+ * Сохраняет входящие Telegram-сообщения в очередь и обрабатывает их асинхронно.
  */
 @Service
 class DialogService(
     private val telegramClient: TelegramClient,
-    private val openAiClient: OpenAiClient
+    private val openAiClient: OpenAiClient,
+    private val messageQueueRepository: MessageQueueRepository
 ) {
 
+    private val log = KotlinLogging.logger {}
+
     /**
-     * Формирует сообщение вида "Пользователь <name> (<id>) спросил: <text>"
-     * и отправляет его в исходный чат.
+     * Добавляет сообщение в очередь, если оно содержит текст.
      */
-    suspend fun directAnswer(message: TelegramMessage) {
-//        val user = message.from
-//            ?: error("Cannot send direct answer: sender is missing in Telegram message")
+    suspend fun enqueueMessage(message: TelegramMessage) {
+        val text = message.text
+        if (text.isNullOrBlank()) {
+            log.debug { "Skipping Telegram message ${message.messageId} because text is empty" }
+            return
+        }
 
-//        val formattedText = buildString {
-//            append("Пользователь ")
-//            append(user.firstName)
-//            user.lastName?.let { append(' ').append(it) }
-//            append(" (id=")
-//            append(user.id)
-//            append(") спросил: ")
-//            append(message.text ?: "")
-//        }
+        val entry = MessageQueueEntry(chatId = message.chat.id, messageText = text)
+        messageQueueRepository.save(entry)
+        log.info { "Queued Telegram message ${message.messageId} for chat ${message.chat.id}" }
+    }
 
-        val prompt = message.text
-
-        val aiResponse = openAiClient.requestChatCompletion(prompt!!)
-
-//        telegramClient.sendMessage(
-//            chatId = message.chat.id,
-//            text = formattedText
-//        )
-
-        telegramClient.sendMessage(chatId = message.chat.id, text = aiResponse)
+    /**
+     * Запрашивает ответ LLM, логирует готовый текст и отправляет его в чат.
+     */
+    suspend fun processQueuedMessage(entry: MessageQueueEntry) {
+        val aiResponse = openAiClient.requestChatCompletion(entry.messageText)
+        log.info { "LLM response for chat ${entry.chatId}: $aiResponse" }
+        telegramClient.sendMessage(chatId = entry.chatId, text = aiResponse)
     }
 }
+
