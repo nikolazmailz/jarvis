@@ -1,4 +1,6 @@
 databaseChangeLog:
   - include:
       file: changes/0001-create-message-queue.sql
+  - include:
+      file: changes/0002-create-message-audit.sql
 

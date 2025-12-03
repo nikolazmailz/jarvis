@@ -3,15 +3,19 @@ package ru.jarvis.infra.sheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import ru.jarvis.application.AuditService
 import ru.jarvis.application.DialogService
-import ru.jarvis.infra.repo.MessageQueueRepository
+import ru.jarvis.domain.audit.AuditDirection
+import ru.jarvis.domain.audit.AuditSource
 import ru.jarvis.domain.queue.MessageStatus
+import ru.jarvis.infra.repo.MessageQueueRepository
 import java.time.Instant
 
 @Service
 class MessageQueueProcessorService(
     private val messageQueueRepository: MessageQueueRepository,
-    private val dialogService: DialogService
+    private val dialogService: DialogService,
+    private val auditService: AuditService
 ) {
 
     private val log = KotlinLogging.logger {}
@@ -34,6 +38,16 @@ class MessageQueueProcessorService(
                 )
             } catch (ex: Exception) {
                 log.error(ex) { "Failed to process queued message ${entry.id}" }
+                auditService.logError(
+                    chatId = entry.chatId,
+                    messageId = null,
+                    source = AuditSource.SYSTEM,
+                    direction = AuditDirection.OUTBOUND,
+                    stage = "QUEUE_PROCESSING",
+                    exception = ex,
+                    correlationId = entry.id,
+                    requestText = entry.messageText
+                )
                 messageQueueRepository.save(
                     entry.copy(
                         status = MessageStatus.FAILED,
