@@ -2,18 +2,6 @@ package ru.jarvis.domain.telegram
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-// todo перенести в controller ?
-/**
- * DTO, описывающий обновление Telegram, которое мы получаем через webhook.
- */
-data class TelegramWebhookRequest(
-    @JsonProperty("update_id")
-    val updateId: Long,
-    val message: TelegramMessage? = null,
-    @JsonProperty("callback_query")
-    val callbackQuery: TelegramCallbackQuery? = null
-)
-
 /**
  * Представляет стандартное сообщение Telegram.
  */

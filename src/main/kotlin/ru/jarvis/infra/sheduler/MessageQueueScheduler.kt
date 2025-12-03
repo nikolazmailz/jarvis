@@ -1,41 +1,32 @@
 package ru.jarvis.infra.sheduler
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import ru.jarvis.application.DialogService
-import ru.jarvis.domain.queue.MessageQueueRepository
-import ru.jarvis.domain.queue.MessageStatus
 
 @Component
 class MessageQueueScheduler(
-    private val messageQueueRepository: MessageQueueRepository,
-    private val dialogService: DialogService
+    private val messageQueueProcessorService: MessageQueueProcessorService,
+    @Value("\${dialog.queue.batch-size:10}")
+    private val batchSize: Int
 ) {
 
     private val log = KotlinLogging.logger {}
+    private val pollingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    @Scheduled(fixedDelay = 500)
+    @Scheduled(fixedDelayString = "\${dialog.queue.poll-interval-ms:500}")
     fun pollQueue() {
-        runBlocking {
-            if (messageQueueRepository.existsByStatus(MessageStatus.PROCESSING)) {
-                return@runBlocking
-            }
-
-            val pendingEntry = messageQueueRepository.findFirstByStatusOrderByCreatedAtAsc(MessageStatus.NEW)
-            if (pendingEntry == null) {
-                return@runBlocking
-            }
-
-            val processingEntry = messageQueueRepository.save(pendingEntry.copy(status = MessageStatus.PROCESSING))
-
+        pollingScope.launch {
+            log.debug { "Polling queue for up to $batchSize messages" }
             try {
-                dialogService.processQueuedMessage(processingEntry)
-                messageQueueRepository.save(processingEntry.copy(status = MessageStatus.SUCCESSFUL))
-            } catch (ex: Exception) {
-                log.error(ex) { "Failed to process queued message ${processingEntry.id}" }
-                messageQueueRepository.save(processingEntry.copy(status = MessageStatus.FAILED))
+                messageQueueProcessorService.processPendingMessages(batchSize)
+            } catch (ex: Throwable) {
+                log.error(ex) { "Message queue processing failed" }
             }
         }
     }

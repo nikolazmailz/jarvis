@@ -7,6 +7,7 @@ CREATE TABLE message_queue (
     status varchar(32) NOT NULL DEFAULT 'NEW',
     origin varchar(32) NOT NULL DEFAULT 'USER',
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    scheduled_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
-
