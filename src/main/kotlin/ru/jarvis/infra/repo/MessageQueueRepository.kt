@@ -1,13 +1,15 @@
-package ru.jarvis.domain.queue
+package ru.jarvis.infra.repo
 
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.data.repository.query.Param
+import ru.jarvis.domain.queue.Message
+import ru.jarvis.domain.queue.MessageStatus
 import java.util.UUID
 
-interface MessageQueueRepository : CoroutineCrudRepository<MessageQueue, UUID> {
+interface MessageQueueRepository : CoroutineCrudRepository<Message, UUID> {
     suspend fun existsByStatus(status: MessageStatus): Boolean
-    suspend fun findFirstByStatusOrderByCreatedAtAsc(status: MessageStatus): MessageQueue?
+    suspend fun findFirstByStatusOrderByCreatedAtAsc(status: MessageStatus): Message?
 
     @Query(
         """
@@ -24,6 +26,5 @@ interface MessageQueueRepository : CoroutineCrudRepository<MessageQueue, UUID> {
         RETURNING q.*
         """
     )
-    suspend fun fetchBatchAndMarkProcessing(@Param("batch") batch: Int): List<MessageQueue>
+    suspend fun fetchBatchAndMarkProcessing(@Param("batch") batch: Int): List<Message>
 }
-

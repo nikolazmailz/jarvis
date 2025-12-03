@@ -1,6 +1,6 @@
 --liquibase formatted sql
 --changeset jarvis:0001-create-message-queue
-CREATE TABLE message_queue (
+CREATE TABLE message (
     id uuid NOT NULL,
     chat_id bigint NOT NULL,
     message_text text NOT NULL,

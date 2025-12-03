@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.jarvis.application.DialogService
-import ru.jarvis.domain.queue.MessageQueueRepository
+import ru.jarvis.infra.repo.MessageQueueRepository
 import ru.jarvis.domain.queue.MessageStatus
 import java.time.Instant
 

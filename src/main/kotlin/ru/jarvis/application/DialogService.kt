@@ -2,8 +2,8 @@ package ru.jarvis.application
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
-import ru.jarvis.domain.queue.MessageQueue
-import ru.jarvis.domain.queue.MessageQueueRepository
+import ru.jarvis.domain.queue.Message
+import ru.jarvis.infra.repo.MessageQueueRepository
 import ru.jarvis.domain.telegram.TelegramMessage
 import ru.jarvis.infra.openai.OpenAiClient
 import ru.jarvis.infra.telegram.TelegramClient
@@ -30,7 +30,7 @@ class DialogService(
             return
         }
 
-        val entry = MessageQueue(chatId = message.chat.id, messageText = text)
+        val entry = Message(chatId = message.chat.id, messageText = text)
         messageQueueRepository.save(entry)
         log.info { "Queued Telegram message ${message.messageId} for chat ${message.chat.id}" }
     }
@@ -38,7 +38,7 @@ class DialogService(
     /**
      * Запрашивает ответ LLM, логирует готовый текст и отправляет его в чат.
      */
-    suspend fun processQueuedMessage(entry: MessageQueue) {
+    suspend fun processQueuedMessage(entry: Message) {
         val aiResponse = openAiClient.requestChatCompletion(entry.messageText)
         log.info { "LLM response for chat ${entry.chatId}: $aiResponse" }
         telegramClient.sendMessage(chatId = entry.chatId, text = aiResponse)

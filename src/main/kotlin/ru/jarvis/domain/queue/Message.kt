@@ -6,8 +6,8 @@ import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 import java.util.UUID
 
-@Table("message_queue")
-data class MessageQueue(
+@Table("message")
+data class Message(
     @Id
     val id: UUID = UUID.randomUUID(),
     @Column("chat_id")
